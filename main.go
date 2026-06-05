@@ -2,15 +2,19 @@ package main
 
 import (
 	"fmt"
+	"os"
+	"log"
 	"os/exec"
+	"encoding/csv"
 	"sync"
 	"math"
 	"math/rand"
+	"strconv"
 )
 
 const (
-	numWorkers = 2
-	numParticles = 8
+	numWorkers = 8
+	numParticles = 200
 	particleRadius = 1.
 	influenceRadius = 1.5
 	tStep = .02
@@ -53,19 +57,18 @@ func (p1 point) addmult(p2 point, a float64) point{
 	return *newPoint
 }
 
-func (this particle) applyForce() {
-	this.vel.addmult(this.F.addmult(randPoint(this.temp, this.temp), .001), tStep)
-	this.pos.addmult(this.vel, tStep)
+func (this *particle) applyForce() {
+	this.vel = this.vel.addmult(this.F.addmult(randPoint(this.temp, this.temp), .1), tStep)
+	this.pos = this.pos.addmult(this.vel, tStep)
 }
 
-func (this particle) interact(other particle) particle {
+func (this *particle) interact(other particle) {
 	distTo := math.Sqrt(math.Pow(this.pos.X - other.pos.X, 2) + math.Pow(this.pos.Y - other.pos.Y, 2))
 	if distTo <= this.size {
-		this.F.addmult(this.pos.addmult(other.pos, -1./(math.Pow(distTo,2.))), 1.)
+		this.F = this.F.addmult(this.pos.addmult(other.pos, -1./(math.Pow(distTo,2.))), 1.)
 	} else if distTo <= influenceRadius {
-		this.F.addmult(this.pos.addmult(other.pos, -1./(math.Pow(distTo,4.))), -1.)
+		this.F = this.F.addmult(this.pos.addmult(other.pos, -1./(math.Pow(distTo,4.))), -1.)
 	}
-	return this
 }
 
 // One worker's computation
@@ -74,7 +77,9 @@ func computeForces(id int, nPerWorker int, pList *group) {
 	end := min(start+nPerWorker, numParticles)
 	for i := start; i < end; i++ {
 		for j := 0; j < numParticles; j++ {
-			pList.groupParticles[i] = pList.groupParticles[i].interact(pList.groupParticles[j])
+			if (j != i) {
+				pList.groupParticles[i].interact(pList.groupParticles[j])
+			}
 		}
 		pList.groupParticles[i].applyForce()
 	}
@@ -124,10 +129,26 @@ func renderVid() {
 func main() {
 	g := new(group)
 	g.groupParticles = startGroup()
-	fmt.Println(g.groupParticles)
-	step(g)
-	step(g)
-	step(g)
-	fmt.Println(g.groupParticles)
+	
+	numSteps := 40
+	pdata := make([][]string, numParticles)
+	for i:=0; i<numSteps; i++ {
+		step(g)
+		pdata[i] = make([]string, 3*numParticles)
+		for j:=0; j<numParticles; j++ {
+			pdata[i][j*3] = strconv.FormatFloat(g.groupParticles[j].pos.X, 'f', 6, 64)
+			pdata[i][j*3 + 1] = strconv.FormatFloat(g.groupParticles[j].pos.Y, 'f', 6, 64)
+			pdata[i][j*3 + 2] = strconv.FormatFloat(g.groupParticles[j].size, 'f', 6, 64)
+		}
+	}
+	file, err := os.Create("output.csv")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer file.Close()
+	writer := csv.NewWriter(file)
+	defer writer.Flush()
+
+	writer.WriteAll(pdata)
 }
 
