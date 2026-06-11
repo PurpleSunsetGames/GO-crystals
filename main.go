@@ -14,12 +14,12 @@ import (
 
 const (
 	numWorkers = 8
-	numParticles = 200
+	numParticles = 2000
 	particleRadius = 1.
-	influenceRadius = 1.5
-	tStep = .02
-	screenW = 200
-	screenH = 200
+	influenceRadius = 3
+	tStep = .01
+	screenW = 100
+	screenH = 100
 )
 
 type group struct {
@@ -131,14 +131,14 @@ func main() {
 	g.groupParticles = startGroup()
 	
 	numSteps := 40
-	pdata := make([][]string, numParticles)
+	pdata := make([][]string, numSteps)
 	for i:=0; i<numSteps; i++ {
-		step(g)
 		pdata[i] = make([]string, 2*numParticles)
 		for j:=0; j<numParticles; j++ {
 			pdata[i][j*2] = strconv.FormatFloat(g.groupParticles[j].pos.X, 'f', 6, 64)
 			pdata[i][j*2 + 1] = strconv.FormatFloat(g.groupParticles[j].pos.Y, 'f', 6, 64)
 		}
+		step(g)
 	}
 	file, err := os.Create("output.csv")
 	if err != nil {
