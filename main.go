@@ -134,11 +134,10 @@ func main() {
 	pdata := make([][]string, numParticles)
 	for i:=0; i<numSteps; i++ {
 		step(g)
-		pdata[i] = make([]string, 3*numParticles)
+		pdata[i] = make([]string, 2*numParticles)
 		for j:=0; j<numParticles; j++ {
-			pdata[i][j*3] = strconv.FormatFloat(g.groupParticles[j].pos.X, 'f', 6, 64)
-			pdata[i][j*3 + 1] = strconv.FormatFloat(g.groupParticles[j].pos.Y, 'f', 6, 64)
-			pdata[i][j*3 + 2] = strconv.FormatFloat(g.groupParticles[j].size, 'f', 6, 64)
+			pdata[i][j*2] = strconv.FormatFloat(g.groupParticles[j].pos.X, 'f', 6, 64)
+			pdata[i][j*2 + 1] = strconv.FormatFloat(g.groupParticles[j].pos.Y, 'f', 6, 64)
 		}
 	}
 	file, err := os.Create("output.csv")
