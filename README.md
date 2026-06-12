@@ -1,2 +1,2 @@
 # GO-crystals
-Simulation of crystal formation in go.
+Simulation of crystal nucleation in go.
