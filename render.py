@@ -9,20 +9,20 @@ with open("output.csv", "r") as file:
     for line in file:
         if len(line) == 0:
             break
-        dat = np.reshape(np.array(line.split(",")), (2,-1))
+        dat = np.reshape(np.array(line.split(",")), (-1,2)).T
         points.append(dat.astype(float))
 
 i=0
 while i<len(points):
     plt.scatter(points[i][0], points[i][1], c="black")
-    plt.xlim(-50, 50)
-    plt.ylim(-50,50)
-    plt.savefig("fig" + str(i))
+    plt.xlim(-40, 40)
+    plt.ylim(-40,40)
+    plt.savefig("output/fig" + str(i), dpi=400)
     plt.clf()
     i+=1
 
-writer = imageio.get_writer('out.mp4', mode="I", fps=2)
+writer = imageio.get_writer('output/out.mp4', mode="I", fps=60)
 for i in range(0, len(points)):
-    writer.append_data(imageio.imread("fig"+str(i)+".png"))
+    writer.append_data(imageio.imread("output/fig"+str(i)+".png"))
 
 

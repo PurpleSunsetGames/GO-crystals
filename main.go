@@ -14,12 +14,13 @@ import (
 
 const (
 	numWorkers = 8
-	numParticles = 2000
-	particleRadius = 1.
-	influenceRadius = 3
-	tStep = .01
-	screenW = 100
-	screenH = 100
+	numParticles = 400
+	particleRadius = 4.
+	tStep = .001
+	tempRangeMin = 270
+	tempRangeMax = 400
+	screenW = 50
+	screenH = 50
 )
 
 type group struct {
@@ -42,10 +43,16 @@ type point struct {
 // Methods
 func startGroup() []particle {
 	gParticles := make([]particle, numParticles)
-	for i:=0; i<numParticles; i++ {
-		gParticles[i].pos = randPoint(screenW, screenH)
-		gParticles[i].temp = rand.Float64() * 400
-		gParticles[i].size = particleRadius
+
+	for i:=0; i<int(math.Sqrt(numParticles)); i++ {
+		for j:=0; j<int(math.Sqrt(numParticles)); j++ {
+			newPoint := new(point)
+			newPoint.X = float64(i)*screenW/math.Sqrt(numParticles) - screenW/2
+			newPoint.Y = float64(j)*screenH/math.Sqrt(numParticles) - screenH/2
+			gParticles[j+i*int(math.Sqrt(numParticles))].pos = newPoint.addmult(randPoint(1,1),.5)
+			gParticles[j+i*int(math.Sqrt(numParticles))].temp = rand.Float64()*(tempRangeMax - tempRangeMin) + tempRangeMin
+			gParticles[j+i*int(math.Sqrt(numParticles))].size = particleRadius
+		}
 	}
 	return gParticles
 }
@@ -58,17 +65,19 @@ func (p1 point) addmult(p2 point, a float64) point{
 }
 
 func (this *particle) applyForce() {
-	this.vel = this.vel.addmult(this.F.addmult(randPoint(this.temp, this.temp), .1), tStep)
+	this.vel = this.vel.addmult(this.F.addmult(randPoint(1,1), this.temp), tStep)
 	this.pos = this.pos.addmult(this.vel, tStep)
+	newPoint := new(point)
+	this.F = *newPoint
 }
 
+// Leonard-Jones as a place holder
 func (this *particle) interact(other particle) {
 	distTo := math.Sqrt(math.Pow(this.pos.X - other.pos.X, 2) + math.Pow(this.pos.Y - other.pos.Y, 2))
-	if distTo <= this.size {
-		this.F = this.F.addmult(this.pos.addmult(other.pos, -1./(math.Pow(distTo,2.))), 1.)
-	} else if distTo <= influenceRadius {
-		this.F = this.F.addmult(this.pos.addmult(other.pos, -1./(math.Pow(distTo,4.))), -1.)
-	}
+	epsilon := .02
+	vLJ := 2*epsilon*(math.Pow(particleRadius/distTo, 12) - math.Pow(particleRadius/distTo, 6))
+	this.F = this.F.addmult(this.pos.addmult(other.pos, -1), vLJ)
+	other.F = other.F.addmult(other.pos.addmult(this.pos, -1), vLJ)
 }
 
 // One worker's computation
@@ -129,8 +138,7 @@ func renderVid() {
 func main() {
 	g := new(group)
 	g.groupParticles = startGroup()
-	
-	numSteps := 40
+	numSteps := 800
 	pdata := make([][]string, numSteps)
 	for i:=0; i<numSteps; i++ {
 		pdata[i] = make([]string, 2*numParticles)
