@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from time import sleep
 import imageio
+import os
 
 points = []
 with open("output.csv", "r") as file:
@@ -21,8 +22,9 @@ while i<len(points):
     plt.clf()
     i+=1
 
-writer = imageio.get_writer('output/out.mp4', mode="I", fps=60)
+writer = imageio.get_writer('output/out.mp4', mode="I", fps=24)
 for i in range(0, len(points)):
     writer.append_data(imageio.imread("output/fig"+str(i)+".png"))
+    os.remove("output/fig"+str(i)+".png")
 
 

@@ -14,13 +14,14 @@ import (
 
 const (
 	numWorkers = 8
-	numParticles = 400
+	numParticles = 625
 	particleRadius = 4.
 	tStep = .001
 	tempRangeMin = 270
 	tempRangeMax = 400
 	screenW = 50
 	screenH = 50
+	stepsPerFrame = 10
 )
 
 type group struct {
@@ -64,7 +65,17 @@ func (p1 point) addmult(p2 point, a float64) point{
 	return *newPoint
 }
 
+func (p point) mag() float64 {
+	return math.Sqrt(p.X*p.X + p.Y*p.Y)
+}
+
 func (this *particle) applyForce() {
+	if math.Abs(this.pos.X) > screenW/2 {
+		this.F.X = this.F.X - 1000*(this.pos.X - (screenW/2)*this.pos.X/math.Abs(this.pos.X))
+	}
+	if math.Abs(this.pos.Y) > screenH/2 {
+		this.F.Y = this.F.Y - 1000*(this.pos.Y - (screenH/2)*this.pos.Y/math.Abs(this.pos.Y))
+	}
 	this.vel = this.vel.addmult(this.F.addmult(randPoint(1,1), this.temp), tStep)
 	this.pos = this.pos.addmult(this.vel, tStep)
 	newPoint := new(point)
@@ -138,7 +149,7 @@ func renderVid() {
 func main() {
 	g := new(group)
 	g.groupParticles = startGroup()
-	numSteps := 800
+	numSteps := 250
 	pdata := make([][]string, numSteps)
 	for i:=0; i<numSteps; i++ {
 		pdata[i] = make([]string, 2*numParticles)
@@ -146,7 +157,9 @@ func main() {
 			pdata[i][j*2] = strconv.FormatFloat(g.groupParticles[j].pos.X, 'f', 6, 64)
 			pdata[i][j*2 + 1] = strconv.FormatFloat(g.groupParticles[j].pos.Y, 'f', 6, 64)
 		}
-		step(g)
+		for k:=0; k<stepsPerFrame; k++{
+			step(g)
+		}
 	}
 	file, err := os.Create("output.csv")
 	if err != nil {
