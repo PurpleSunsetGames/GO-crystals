@@ -15,14 +15,15 @@ import (
 const (
 	numWorkers = 8
 	numParticles = 625
-	particleRadius = 4.
-	tStep = .001
-	tempRangeMin = 270
-	tempRangeMax = 400
+	particleRadius = 3.
+	tStep = .0001
 	screenW = 50
 	screenH = 50
-	stepsPerFrame = 10
+	stepsPerFrame = 100
 )
+var tempRangeMin = 270.
+var tempRangeMax = 400.
+var epsilon = 3.
 
 type group struct {
 	groupParticles []particle
@@ -85,7 +86,6 @@ func (this *particle) applyForce() {
 // Leonard-Jones as a place holder
 func (this *particle) interact(other particle) {
 	distTo := math.Sqrt(math.Pow(this.pos.X - other.pos.X, 2) + math.Pow(this.pos.Y - other.pos.Y, 2))
-	epsilon := .02
 	vLJ := 2*epsilon*(math.Pow(particleRadius/distTo, 12) - math.Pow(particleRadius/distTo, 6))
 	this.F = this.F.addmult(this.pos.addmult(other.pos, -1), vLJ)
 	other.F = other.F.addmult(other.pos.addmult(this.pos, -1), vLJ)
@@ -149,7 +149,7 @@ func renderVid() {
 func main() {
 	g := new(group)
 	g.groupParticles = startGroup()
-	numSteps := 250
+	numSteps := 100
 	pdata := make([][]string, numSteps)
 	for i:=0; i<numSteps; i++ {
 		pdata[i] = make([]string, 2*numParticles)
@@ -160,6 +160,12 @@ func main() {
 		for k:=0; k<stepsPerFrame; k++{
 			step(g)
 		}
+		if tempRangeMax > 40 {
+			tempRangeMax -= 2
+		}
+		if tempRangeMin > 20 {
+			tempRangeMin -= 2
+		}	
 	}
 	file, err := os.Create("output.csv")
 	if err != nil {
