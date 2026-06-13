@@ -12,12 +12,12 @@ import (
 
 const (
 	numWorkers = 8
-	numParticles = 625
+	numParticles = 800
 	particleRadius = 2.5
 	tStep = .0001
 	screenW = 50
 	screenH = 50
-	stepsPerFrame = 100
+	stepsPerFrame = 10
 	wallPotential = 10000
 )
 var tempRangeMin = 800.
@@ -127,9 +127,9 @@ func (this *particle) interact(other particle) {
 		for _, v := range mirrors {
 			distTo := math.Sqrt(math.Pow(this.pos.X - v.X, 2) + math.Pow(this.pos.Y - v.Y, 2))
 			if distTo < 3*particleRadius {
-				vLJ := 2*epsilon*(math.Pow(particleRadius/distTo, 12) - math.Pow(particleRadius/distTo, 6))
-				this.F = this.F.addmult(this.pos.addmult(other.pos, -1), vLJ)
-				other.F = other.F.addmult(v.addmult(this.pos, -1), vLJ)
+				vLJ := 4*epsilon*(math.Pow(particleRadius/distTo, 12) - math.Pow(particleRadius/distTo, 6))
+				this.F = this.F.addmult(this.pos.addmult(v, -1), vLJ)
+				//other.F = other.F.addmult(v.addmult(this.pos, -1), vLJ)
 			}
 		}
 	}
