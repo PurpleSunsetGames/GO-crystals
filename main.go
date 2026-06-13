@@ -12,17 +12,23 @@ import (
 
 const (
 	numWorkers = 8
-	numParticles = 800
-	particleRadius = 2.5
-	tStep = .0001
-	screenW = 50
-	screenH = 50
-	stepsPerFrame = 10
+	numParticles = 900
+
+	// in nanometers
+	particleRadius = .26
+
+	// in nanoseconds?
+	tStep = .01
+	screenW = 10
+	screenH = 10
+	stepsPerFrame = 12
 	wallPotential = 10000
 )
-var tempRangeMin = 800.
-var tempRangeMax = 1000.
-var epsilon = 28.
+var tempRangeMin = 300.
+var tempRangeMax = 400.
+
+// kj/mol
+var epsilon = 19.
 var wall = false
 
 type group struct {
@@ -51,8 +57,10 @@ func startGroup() []particle {
 			newPoint := new(point)
 			newPoint.X = float64(i)*screenW/math.Sqrt(numParticles) - screenW/2
 			newPoint.Y = float64(j)*screenH/math.Sqrt(numParticles) - screenH/2
-			gParticles[j+i*int(math.Sqrt(numParticles))].pos = newPoint.addmult(randPoint(1,1),.5)
-			gParticles[j+i*int(math.Sqrt(numParticles))].temp = rand.Float64()*(tempRangeMax - tempRangeMin) + tempRangeMin
+			newTemp := rand.Float64()*(tempRangeMax - tempRangeMin) + tempRangeMin
+			gParticles[j+i*int(math.Sqrt(numParticles))].pos = newPoint.addmult(randPoint(1,1),.5*(screenW/math.Sqrt(numParticles)))
+			gParticles[j+i*int(math.Sqrt(numParticles))].temp = newTemp
+			gParticles[j+i*int(math.Sqrt(numParticles))].vel = randPoint(newTemp, newTemp)
 			gParticles[j+i*int(math.Sqrt(numParticles))].size = particleRadius
 		}
 	}
@@ -91,7 +99,7 @@ func (this *particle) applyForce() {
 			this.F.Y = this.F.Y - wallPotential*(this.pos.Y - (screenH/2)*this.pos.Y/math.Abs(this.pos.Y))
 		}
 	}
-	this.vel = this.vel.addmult(this.F.addmult(randPoint(1,1), this.temp), tStep).mult(.999)
+	this.vel = this.vel.addmult(this.F, tStep).mult(.999)
 	this.pos = this.pos.addmult(this.vel, tStep)
 	if !wall {
 		newP := new(point)
@@ -101,14 +109,13 @@ func (this *particle) applyForce() {
 	}
 	newPoint := new(point)
 	this.F = *newPoint
-	this.temp = rand.Float64()*(tempRangeMax - tempRangeMin) + tempRangeMin
 }
 
 // Leonard-Jones as a place holder
 func (this *particle) interact(other particle) {
 	if wall{
 		distTo := math.Sqrt(math.Pow(this.pos.X - other.pos.X, 2) + math.Pow(this.pos.Y - other.pos.Y, 2))
-		if distTo < 3*particleRadius {
+		if distTo < 8*particleRadius {
 			vLJ := 2*epsilon*(math.Pow(particleRadius/distTo, 12) - math.Pow(particleRadius/distTo, 6))
 			this.F = this.F.addmult(this.pos.addmult(other.pos, -1), vLJ)
 			other.F = other.F.addmult(other.pos.addmult(this.pos, -1), vLJ)
@@ -126,10 +133,10 @@ func (this *particle) interact(other particle) {
 		}
 		for _, v := range mirrors {
 			distTo := math.Sqrt(math.Pow(this.pos.X - v.X, 2) + math.Pow(this.pos.Y - v.Y, 2))
-			if distTo < 3*particleRadius {
-				vLJ := 4*epsilon*(math.Pow(particleRadius/distTo, 12) - math.Pow(particleRadius/distTo, 6))
+			if distTo < 8*particleRadius {
+				vLJ := 2*epsilon*(math.Pow(particleRadius/distTo, 12) - math.Pow(particleRadius/distTo, 6))
 				this.F = this.F.addmult(this.pos.addmult(v, -1), vLJ)
-				//other.F = other.F.addmult(v.addmult(this.pos, -1), vLJ)
+				other.F = other.F.addmult(v.addmult(this.pos, -1), vLJ)
 			}
 		}
 	}

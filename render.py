@@ -16,8 +16,8 @@ with open("output.csv", "r") as file:
 i=0
 while i<len(points):
     plt.scatter(points[i][0], points[i][1], c="black")
-    plt.xlim(-40, 40)
-    plt.ylim(-40,40)
+    plt.xlim(-10, 10)
+    plt.ylim(-10,10)
     plt.savefig("output/fig" + str(i), dpi=400)
     plt.clf()
     i+=1
