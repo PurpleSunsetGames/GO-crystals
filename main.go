@@ -20,8 +20,8 @@ const (
 	stepsPerFrame = 100
 	wallPotential = 10000
 )
-var tempRangeMin = 270.
-var tempRangeMax = 400.
+var tempRangeMin = 800.
+var tempRangeMax = 1000.
 var epsilon = 28.
 
 type group struct {
@@ -82,7 +82,7 @@ func (this *particle) applyForce() {
 	if math.Abs(this.pos.Y) > screenH/2 {
 		this.F.Y = this.F.Y - wallPotential*(this.pos.Y - (screenH/2)*this.pos.Y/math.Abs(this.pos.Y))
 	}
-	this.vel = this.vel.addmult(this.F.addmult(randPoint(1,1), this.temp), tStep).mult(.98)
+	this.vel = this.vel.addmult(this.F.addmult(randPoint(1,1), this.temp), tStep).mult(.999)
 	this.pos = this.pos.addmult(this.vel, tStep)
 	newPoint := new(point)
 	this.F = *newPoint
