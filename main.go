@@ -1,10 +1,8 @@
 package main
 
 import (
-	"fmt"
 	"os"
 	"log"
-	"os/exec"
 	"encoding/csv"
 	"sync"
 	"math"
@@ -15,15 +13,16 @@ import (
 const (
 	numWorkers = 8
 	numParticles = 625
-	particleRadius = 3.
+	particleRadius = 2.5
 	tStep = .0001
 	screenW = 50
 	screenH = 50
 	stepsPerFrame = 100
+	wallPotential = 10000
 )
 var tempRangeMin = 270.
 var tempRangeMax = 400.
-var epsilon = 3.
+var epsilon = 28.
 
 type group struct {
 	groupParticles []particle
@@ -69,18 +68,25 @@ func (p1 point) addmult(p2 point, a float64) point{
 func (p point) mag() float64 {
 	return math.Sqrt(p.X*p.X + p.Y*p.Y)
 }
+func (p point) mult(factor float64) point {
+	newPoint := new(point)
+	newPoint.X = factor * p.X
+	newPoint.Y = factor * p.Y
+	return *newPoint
+}
 
 func (this *particle) applyForce() {
 	if math.Abs(this.pos.X) > screenW/2 {
-		this.F.X = this.F.X - 1000*(this.pos.X - (screenW/2)*this.pos.X/math.Abs(this.pos.X))
+		this.F.X = this.F.X - wallPotential*(this.pos.X - (screenW/2)*this.pos.X/math.Abs(this.pos.X))
 	}
 	if math.Abs(this.pos.Y) > screenH/2 {
-		this.F.Y = this.F.Y - 1000*(this.pos.Y - (screenH/2)*this.pos.Y/math.Abs(this.pos.Y))
+		this.F.Y = this.F.Y - wallPotential*(this.pos.Y - (screenH/2)*this.pos.Y/math.Abs(this.pos.Y))
 	}
-	this.vel = this.vel.addmult(this.F.addmult(randPoint(1,1), this.temp), tStep)
+	this.vel = this.vel.addmult(this.F.addmult(randPoint(1,1), this.temp), tStep).mult(.98)
 	this.pos = this.pos.addmult(this.vel, tStep)
 	newPoint := new(point)
 	this.F = *newPoint
+	this.temp = rand.Float64()*(tempRangeMax - tempRangeMin) + tempRangeMin
 }
 
 // Leonard-Jones as a place holder
@@ -126,30 +132,10 @@ func step(ps *group) {
 	wg.Wait()
 }
 
-func renderVid() {
-	// FFmpeg command to turn sequential PNGs into a video
-	// -i: input pattern (e.g., image-1.png, image-2.png)
-	// -c:v libx264: use H.264 video codec
-	// -pix_fmt yuv420p: ensures browser and media player compatibility
-	cmd := exec.Command("ffmpeg", 
-		"-framerate", "30", 
-		"-i", "image-%d.png", 
-		"-c:v", "libx264", 
-		"-pix_fmt", "yuv420p", 
-		"output.mp4",
-	)
-	err := cmd.Run()
-	if err != nil {
-		fmt.Println("Error converting PNGs to video:", err)
-		return
-	}
-	fmt.Println("Video successfully created: output.mp4")
-}
-
 func main() {
 	g := new(group)
 	g.groupParticles = startGroup()
-	numSteps := 100
+	numSteps := 200
 	pdata := make([][]string, numSteps)
 	for i:=0; i<numSteps; i++ {
 		pdata[i] = make([]string, 2*numParticles)
@@ -161,10 +147,10 @@ func main() {
 			step(g)
 		}
 		if tempRangeMax > 40 {
-			tempRangeMax -= 2
+			tempRangeMax -= 4
 		}
 		if tempRangeMin > 20 {
-			tempRangeMin -= 2
+			tempRangeMin -= 4
 		}	
 	}
 	file, err := os.Create("output.csv")
